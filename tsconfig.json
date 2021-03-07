@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "strict": true,
+      "baseUrl": "./",
+      "outDir": "build",
+      "removeComments": true,
+      "target": "ES6",
+      "moduleResolution": "Node",
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true
+    },
+    "include": [
+      "./src/**/*.ts"
+    ]
+}
