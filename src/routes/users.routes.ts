@@ -1,28 +1,25 @@
 import { Router } from 'express';
+import { check } from 'express-validator';
 
+import { getUsers, login, signup } from '../controllers/users.controller';
 
-const DUMMY_DATA = [
-    {
-        id: 'u1',
-        name: 'miles',
-        placeQty: 2
-    },
-    {
-        id: 'u2',
-        name: 'davis',
-        placeQty: 5
-    }
-];
 
 const router = Router();
 
 
-router.get('/:uid', (req, res, next) => {
-    const userId = req.params.uid;
-    const match = DUMMY_DATA.find(e => e.id === userId);
-    console.log('GET REQUEST IN /USERS');
-    res.json({message: 'it works!', data: match});
-});
+
+router.get('/', getUsers);
+
+router.post('/signup', 
+    [
+        check('name').not().isEmpty(),
+        check('email').normalizeEmail().isEmail(),
+        check('password').isLength({min: 6})
+    ],
+    signup
+);
+
+router.post('/login', login);
 
 
 export default router;
