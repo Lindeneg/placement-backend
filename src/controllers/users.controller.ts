@@ -1,66 +1,73 @@
-import { Request, Response, NextFunction} from 'express';
-import { v4 as generateId } from 'uuid';
-import { validationResult } from 'express-validator';
+import { validationResult, Result, ValidationError } from 'express-validator';
 
+import User, { IUser } from '../models/user.model';
 import HTTPException from '../models/exception.model';
+import { EMiddleware, SBody } from '../util/types';
 
 
-const DUMMY_DATA = [
-    {
-        id: 'u1',
-        name: 'miles davis',
-        email: 'miles@smiles.com',
-        password: 'kindofblue'
-    },
-    {
-        id: 'u2',
-        name: 'bill evans',
-        email: 'rip@lafaro.com',
-        password: 'debbie'
+export const getUsers: EMiddleware = async (req, res, next) => {
+    try {
+        const users: IUser[] = await User.find({}, '-password');
+        res.status(200).json(users.map(e => e.toObject()));
+    } catch(err) {
+        next(HTTPException.rInternal(err));
     }
-];
-
-
-type ExpressMW = (req: Request, res: Response, next: NextFunction) => void;
-
-
-export const getUsers: ExpressMW = (req, res, next) => {
-    res.status(200).json(DUMMY_DATA);
 };
 
-export const signup: ExpressMW = (req, res, next) => {
-    const errors = validationResult(req);
+export const signup: EMiddleware = async (req, res, next) => {
+    const errors: Result<ValidationError> = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return next(HTTPException.rMalformed());
+    }
+    
+    const { name, image, email, password }: SBody = req.body;
+
+    try {
+        const existingUser: IUser | null = await User.findOne({ email });
+        if (existingUser) {
+            next(HTTPException.rUnprocessable('user already exists in system'));
+        } else {
+            const ts     : number = new Date().getTime();
+            const newUser: IUser  = new User({  
+                name, 
+                image, 
+                email, 
+                password, 
+                places   : [], 
+                createdOn: ts, 
+                updatedOn: ts,
+                lastLogin: ts
+            });
+
+            await newUser.save();
+
+            res.status(201).json(newUser.toObject());
+        }
+    } catch(err) {
+        next(HTTPException.rInternal(err));
+    }
+};
+
+export const login: EMiddleware = async (req, res, next) => {
+    const errors: Result<ValidationError> = validationResult(req);
 
     if (!errors.isEmpty()) {    
-        return next(new HTTPException('Cannot handle POST request. Request body malformed.', 422));
+        return next(HTTPException.rMalformed());
     }
-    
-    const { name, email, password } = req.body;
 
-    const match = DUMMY_DATA.find(e => e.email === email);
+    const { email, password }: SBody = req.body;
 
-    if (match) {
-        next(new HTTPException('Cannot signup. User already exists.', 422));
-    } else {
-        const newUser = {
-            id: generateId(),
-            name, email, password
-        };  
-    
-        DUMMY_DATA.push(newUser);
-    
-        res.status(201).json(newUser);
-    }
-};
-
-export const login: ExpressMW = (req, res, next) => {
-    const { email, password } = req.body;
-
-    const match = DUMMY_DATA.find(e => e.email === email && e.password === password);
-
-    if (!match) {
-        next(new HTTPException('Authentication Error. Credentials are incorrect.', 403))
-    } else {
-        res.status(200).json({message: 'Login successful'});
+    try {
+        const foundUser: IUser | null = await User.findOne({ email, password });
+        if (!foundUser) {
+            next(HTTPException.rAuth())
+        } else {
+            foundUser.lastLogin = new Date().getTime();
+            await foundUser.save();
+            res.status(200).json({message: 'Login successful'});
+        }
+    } catch(err) {
+        next(HTTPException.rInternal(err));
     }
 };
