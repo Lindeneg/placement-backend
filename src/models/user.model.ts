@@ -11,18 +11,20 @@ export interface IUser extends BaseDoc {
     email    : string,
     password : string,
     places   : Array<IPlace['_id']>,
+    createdOn: number,
+    updatedOn: number,
     lastLogin: number
 };
 
 const userSchema: Schema = new Schema({
-    name    : { type: String, required: true },
-    image   : { type: String, required: true },
-    email   : { type: String, required: true, unique: true },
-    password: { type: String, required: true, minLength: 6 },
-    places  : { type: [ Types.ObjectId ], required: true, ref: ModelName.Place },
-    createdOn : { type: Number, required: true },
-    updatedOn : { type: Number, required: true },
-    lastLogin : { type: Number, required: true }
+    name     : { type: String, required: true },
+    image    : { type: String, required: true },
+    email    : { type: String, required: true, unique: true },
+    password : { type: String, required: true, minLength: 6 },
+    places   : { type: [ Types.ObjectId ], required: true, ref: ModelName.Place },
+    createdOn: { type: Number, required: true },
+    updatedOn: { type: Number, required: true },
+    lastLogin: { type: Number, required: true }
 });
 
 // validate uniqueness of email
