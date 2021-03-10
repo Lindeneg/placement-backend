@@ -14,12 +14,19 @@ router.post('/signup',
     [
         check('name').not().isEmpty(),
         check('email').normalizeEmail().isEmail(),
-        check('password').isLength({min: 6})
+        check('password').isLength({min: 6}),
+        check('image').not().isEmpty()
     ],
     signup
 );
 
-router.post('/login', login);
+router.post('/login', 
+    [
+        check('email').normalizeEmail().isEmail(),
+        check('password').isLength({min: 6})
+    ],
+    login
+);
 
 
 export default router;
