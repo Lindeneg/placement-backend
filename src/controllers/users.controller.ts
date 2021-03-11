@@ -21,7 +21,7 @@ export const signup: EMiddleware = async (req, res, next) => {
         return next(HTTPException.rMalformed(errors));
     }
     
-    const { name, image, email, password }: SBody = req.body;
+    const { name, email, password }: SBody = req.body;
 
     try {
         const existingUser: IUser | null = await User.findOne({ email });
@@ -31,9 +31,9 @@ export const signup: EMiddleware = async (req, res, next) => {
             const ts     : number = new Date().getTime();
             const newUser: IUser  = new User({  
                 name, 
-                image, 
                 email, 
                 password, 
+                image    : req.file.path,
                 places   : [], 
                 createdOn: ts, 
                 updatedOn: ts,

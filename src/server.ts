@@ -1,6 +1,7 @@
 import path from 'path';
+import fs from 'fs';
 
-import express, { Express, Request, Response, NextFunction} from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import { connect } from 'mongoose';
 import { json as bodyParserJSON } from 'body-parser';
 import { config } from 'dotenv';
@@ -8,6 +9,7 @@ import { config } from 'dotenv';
 import placesRouter from './routes/places.routes';
 import usersRouter from './routes/users.routes'
 import HTTPException from './models/exception.model';
+
 
 // TODO logging
 
@@ -21,10 +23,17 @@ if (typeof process.env.WHITELISTED_DOMAIN === 'undefined') {
     throw new Error('WHITELISTED_DOMAIN is undefined');
 }
 
+if (typeof process.env.PORT === 'undefined') {
+    throw new Error('PORT is undefined');
+}
+
+
 // TODO use leaflet instead
 if (typeof process.env.GOOGLE_API_KEY === 'undefined') {
     throw new Error('GOOGLE_API_KEY is undefined');
 }
+
+const debug: boolean = process.env.NODE_ENV === 'development';
 
 
 const app: Express = express();
@@ -39,6 +48,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
+app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 app.use('/api/places', placesRouter);
 app.use('/api/users', usersRouter);
 
@@ -49,11 +59,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 
 app.use(((error: HTTPException | any, req: Request, res: Response, next: NextFunction) => {
+    if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+            debug && console.log(err);
+        });
+    }
     if (res.headersSent) {
         next(error);
     } else {
-        const fallBack: string = process.env.NODE_ENV === 'development' ? error : 'Something went wrong. Please try again.';
-        res.status(error.statusCode).json(error instanceof HTTPException ? error.toResponse() : fallBack);
+        const fallBack: string = debug ? error : 'Something went wrong. Please try again.';
+        res.status(error.statusCode || 500).json(error instanceof HTTPException ? error.toResponse() : (error instanceof Error ? error.message : fallBack));
     }
 }));
 
@@ -68,13 +83,11 @@ connect(process.env.MONGO_DB_URI, {
 })
 .then(() => {
     // only start server if connection to database exists
-    app.listen(5000, () => {
-        console.log('connected to mongodb\nstarting server on port 5000');
+    app.listen(process.env.PORT, () => {
+        console.log('connected to mongodb\nstarting server on port ' + process.env.PORT);
     });
 })
 .catch((err) => {
     console.log('connection to mongodb failed...');
-    if (process.env.NODE_ENV === 'development') {
-        console.log(err);
-    }
+    debug && console.log(err);
 });

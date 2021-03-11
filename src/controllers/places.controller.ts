@@ -1,3 +1,5 @@
+import fs from 'fs';
+
 import { validationResult, Result, ValidationError } from 'express-validator';
 import { startSession, ClientSession } from 'mongoose';
 
@@ -44,7 +46,7 @@ export const createPlace: EMiddleware = async (req, res, next) => {
         return next(HTTPException.rMalformed(errors));
     }
 
-    const { title, description, address, image, creatorId }: SBody = req.body;
+    const { title, description, address, creatorId }: SBody = req.body;
     
     try {
         const ts      : number = new Date().getTime();
@@ -54,15 +56,15 @@ export const createPlace: EMiddleware = async (req, res, next) => {
             description,
             address,
             creatorId,
-            image,
             location,
+            image    : req.file.path,
             createdOn: ts,
             updatedOn: ts
         });
         const session: ClientSession = await startSession();
         session.startTransaction();
         await newPlace.save({ session });
-        await User.findByIdAndUpdate(creatorId, { $push: { [CollectionName.Place]: newPlace._id }}, { session });
+        await User.findByIdAndUpdate(creatorId, { $push: { [CollectionName.Place]: newPlace._id }, updatedOn: ts}, { session });
         await session.commitTransaction();
         res.status(201).json(newPlace.toObject());
     } catch(err) {
@@ -87,6 +89,7 @@ export const updatePlaceById: EMiddleware = async (req, res, next) => {
             next(HTTPException.rNotFound())
         } else {
             await foundPlace.save();
+            await User.findByIdAndUpdate(foundPlace.creatorId, { updatedOn })
             // send the updated object with response
             res.status(200).json(foundPlace.toObject());
         }
@@ -108,6 +111,10 @@ export const deletePlaceById: EMiddleware = async (req, res, next) => {
             // remove the place reference from the tied user
             await User.findByIdAndUpdate(foundPlace.creatorId, { $pull: { [CollectionName.Place]: foundPlace._id }, updatedOn }, { session });
             await session.commitTransaction();
+            // delete image on server
+            fs.unlink(foundPlace.image, (err) => {
+                process.env.NODE_ENV === 'development' && console.log(err);
+            });
             // send the deleted object with response
             res.status(200).json(foundPlace.toObject());
          }

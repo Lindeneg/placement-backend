@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { check } from 'express-validator';
 
+import { fileUpload } from '../middleware/file.upload';
 import { 
     getPlaceById, 
     getPlacesByUserId, 
@@ -16,11 +17,11 @@ router.get('/:pid',      getPlaceById);
 router.get('/user/:uid', getPlacesByUserId);
 
 router.post('/', 
+    fileUpload.single('image'),
     [
         check('title').not().isEmpty(),
         check('description').isLength({min: 5}),
         check('address').not().isEmpty(),
-        check('image').not().isEmpty(),
         check('creatorId').not().isEmpty()
     ], 
     createPlace
