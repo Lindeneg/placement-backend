@@ -23,6 +23,10 @@ if (typeof process.env.WHITELISTED_DOMAIN === 'undefined') {
     throw new Error('WHITELISTED_DOMAIN is undefined');
 }
 
+if (typeof process.env.JWT_PRIVATE_TOKEN === 'undefined') {
+    throw new Error('JWT_PRIVATE_TOKEN is undefined');
+}
+
 if (typeof process.env.PORT === 'undefined') {
     throw new Error('PORT is undefined');
 }
