@@ -32,6 +32,10 @@ export interface SBody {
     [key: string]: string
 };
 
-export type DevError = string | Result<ValidationError>;;
+export interface TokenData {
+    userId: string
+};
+
+export type DevError = string | Result<ValidationError>;
 
 export type EMiddleware = (req: Request, res: Response, next: NextFunction) => void;

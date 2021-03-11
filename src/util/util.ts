@@ -1,7 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
+import jwt from 'jsonwebtoken';
 
 import HTTPException from '../models/exception.model';
-import { GeoLocation } from './types';
+import { GeoLocation, TokenData } from './types';
 
 
 interface GoogleMapGeoCodeResult {
@@ -32,4 +33,25 @@ export const getCoordsFromAddress = async (address: string): Promise<GeoLocation
     }
 
     return res.data.results[0].geometry.location;
+};
+
+export const getToken = (pl: string | object): string | null => {
+    if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
+        return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, {expiresIn: '1h'});
+    }
+    return null;
+}
+
+export const verifyToken = (token: string): TokenData | null => {
+    try {
+        if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
+            const result: TokenData = jwt.verify(token, process.env.JWT_PRIVATE_TOKEN) as TokenData;
+            if (typeof result === 'object') {
+                return result;
+            } 
+        }
+    } catch(err) {
+        process.env.NODE_ENV === 'development' && console.log(err);
+    }
+    return null;
 }

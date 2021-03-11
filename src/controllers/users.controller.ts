@@ -1,7 +1,9 @@
 import { validationResult, Result, ValidationError } from 'express-validator';
+import bcrypt from 'bcryptjs';
 
 import User, { IUser } from '../models/user.model';
 import HTTPException from '../models/exception.model';
+import { getToken } from 'src/util/util';
 import { CollectionName, EMiddleware, ModelName, SBody } from '../util/types';
 
 
@@ -29,19 +31,27 @@ export const signup: EMiddleware = async (req, res, next) => {
             next(HTTPException.rUnprocessable('user already exists in system'));
         } else {
             const ts     : number = new Date().getTime();
+            const pwd    : string = await bcrypt.hash(password, 16);
             const newUser: IUser  = new User({  
                 name, 
                 email, 
-                password, 
+                password : pwd, 
                 image    : req.file.path,
                 places   : [], 
                 createdOn: ts, 
                 updatedOn: ts,
                 lastLogin: ts
             });
-
             await newUser.save();
-            res.status(201).json(newUser.toObject());
+            const token: string | null = getToken({userId: newUser._id});
+            if (token) {
+                res.status(201).json({
+                    token,
+                    _id: newUser._id
+                });
+            } else {
+                next(HTTPException.rInternal('jwt token could not be generated'));
+            }
         }
     } catch(err) {
         next(HTTPException.rInternal(err));
@@ -58,16 +68,29 @@ export const login: EMiddleware = async (req, res, next) => {
     const { email, password }: SBody = req.body;
 
     try {
-        const foundUser: IUser | null = await User.findOne({ email, password }, '-password -email').populate({
+        const foundUser: IUser | null = await User.findOne({ email }, '-email').populate({
             path: CollectionName.Place, 
             model: ModelName.Place
         });
         if (!foundUser) {
-            next(HTTPException.rAuth())
+            next(HTTPException.rAuth());
         } else {
-            foundUser.lastLogin = new Date().getTime();
-            await foundUser.save();
-            res.status(200).json(foundUser.toObject());
+            const pwdValid: boolean = await bcrypt.compare(password, foundUser.password);
+            if (!pwdValid) {
+                next(HTTPException.rAuth());
+            } else {
+                foundUser.lastLogin = new Date().getTime();
+                await foundUser.save();
+                const token: string | null = getToken({ userId: foundUser._id});
+                if (token) {
+                    res.status(200).json({
+                        token,
+                        _id: foundUser._id
+                    });
+                } else {
+                    next(HTTPException.rInternal('jwt token could not be generated'));
+                }
+            }
         }
     } catch(err) {
         next(HTTPException.rInternal(err));
