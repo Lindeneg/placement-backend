@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction} from 'express';
+import { Result, ValidationError } from 'express-validator';
 import { Document } from "mongoose";
 
 
@@ -24,11 +25,13 @@ export interface BaseDoc extends Document {
 
 export interface ErrorResponseContent {
     message: string,
-    dev   ?: string
+    dev   ?: DevError
 };
 
 export interface SBody {
     [key: string]: string
 };
+
+export type DevError = string | Result<ValidationError>;;
 
 export type EMiddleware = (req: Request, res: Response, next: NextFunction) => void;
