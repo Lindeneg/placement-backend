@@ -8,9 +8,8 @@
       "target": "ES6",
       "moduleResolution": "Node",
       "esModuleInterop": true,
-      "skipLibCheck": true
+      "skipLibCheck": true,
+      "types": ["./src/typings"]
     },
-    "include": [
-      "./src/**/*.ts"
-    ]
-}
+    "include": ["./src/**/*.ts"]
+} 
