@@ -11,8 +11,6 @@ export interface IUser extends BaseDoc {
     email    : string,
     password : string,
     places   : Array<IPlace['_id']>,
-    createdOn: number,
-    updatedOn: number,
     lastLogin: number
 };
 

@@ -11,8 +11,6 @@ export interface IPlace extends BaseDoc {
     address    : string,
     creatorId  : IUser['_id'],
     location   : GeoLocation,
-    createdOn: number,
-    updatedOn: number
 };
 
 const placeSchema: Schema = new Schema({
