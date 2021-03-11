@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 import User, { IUser } from '../models/user.model';
 import HTTPException from '../models/exception.model';
-import { getToken } from 'src/util/util';
+import { getToken } from '../util/util';
 import { CollectionName, EMiddleware, ModelName, SBody } from '../util/types';
 
 

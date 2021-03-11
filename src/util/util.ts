@@ -48,7 +48,9 @@ export const verifyToken = (token: string): TokenData | null => {
             const result: TokenData = jwt.verify(token, process.env.JWT_PRIVATE_TOKEN) as TokenData;
             if (typeof result === 'object') {
                 return result;
-            } 
+            } else {
+                process.env.NODE_ENV === 'development' && console.log('unexpected token result: ' + result);
+            }
         }
     } catch(err) {
         process.env.NODE_ENV === 'development' && console.log(err);

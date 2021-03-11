@@ -2,21 +2,27 @@ import HTTPException from '../models/exception.model';
 import { verifyToken } from '../util/util';
 import { EMiddleware, TokenData } from "../util/types";
 
-// https://stackoverflow.com/questions/37377731/extend-express-request-object-using-typescript
 
 export const authCheck: EMiddleware = (req, res, next) => {
-    try {
-        const authHeader: string[] = req.headers.authorization?.split(' ') || [];
-        if (authHeader.length === 2) {
-            const token   : string           = authHeader[1];
-            const decToken: TokenData | null = verifyToken(token);
-            if (decToken) {
-                req.userData = decToken;
+    if (req.method === 'OPTIONS') {
+        next()
+    } else {
+        try {
+            const authHeader: string[] = req.headers.authorization?.split(' ') || [];
+            if (authHeader.length === 2) {
+                const token   : string           = authHeader[1];
+                const decToken: TokenData | null = verifyToken(token);
+                if (decToken) {
+                    req.userData = decToken;
+                    next();
+                } else {
+                    next(HTTPException.rAuth('token could not be successfully verified'));
+                }
+            } else {
+                next(HTTPException.rMalformed('authorization header is invalid'));
             }
-        } else {
-            next(HTTPException.rAuth('authorization header is invalid'));
+        } catch(err) {
+            next(HTTPException.rInternal(err));
         }
-    } catch(err) {
-        next(HTTPException.rInternal(err));
     }
 };
