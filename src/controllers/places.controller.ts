@@ -15,7 +15,7 @@ export const getPlaceById: EMiddleware = async (req, res, next) => {
         if (!foundPlace) {
             next(HTTPException.rNotFound());
         } else {
-            res.json({message: 'Successfully fetched place.', data: foundPlace.toObject()});
+            res.json(foundPlace.toObject());
         }
     } catch(err) {
         next(HTTPException.rInternal(err));
@@ -30,7 +30,7 @@ export const getPlacesByUserId: EMiddleware = async (req, res, next) => {
         if (!foundPlaces) {
             next(HTTPException.rNotFound());
         } else {
-            res.json({message: 'Successfully fetched places.', data: foundPlaces.map(e => e.toObject())});
+            res.json(foundPlaces.map(e => e.toObject()));
         }
     } catch(err) {
         next(HTTPException.rInternal(err));
@@ -41,7 +41,7 @@ export const createPlace: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
 
     if (!errors.isEmpty()) {    
-        return next(HTTPException.rMalformed());
+        return next(HTTPException.rMalformed(errors));
     }
 
     const { title, description, address, image, creatorId }: SBody = req.body;
@@ -74,7 +74,7 @@ export const updatePlaceById: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
 
     if (!errors.isEmpty()) {    
-        return next(HTTPException.rMalformed());
+        return next(HTTPException.rMalformed(errors));
     }
 
     const placeId               : string = req.params.pid;
