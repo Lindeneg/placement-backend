@@ -9,11 +9,16 @@ import placesRouter from './routes/places.routes';
 import usersRouter from './routes/users.routes'
 import HTTPException from './models/exception.model';
 
+// TODO logging
 
 config({path: path.resolve(__dirname, '../.env')});
 
 if (typeof process.env.MONGO_DB_URI === 'undefined') {
     throw new Error('MONGO_DB_URI is undefined');
+}
+
+if (typeof process.env.WHITELISTED_DOMAIN === 'undefined') {
+    throw new Error('WHITELISTED_DOMAIN is undefined');
 }
 
 // TODO use leaflet instead
@@ -27,6 +32,12 @@ const app: Express = express();
 
 app.use(bodyParserJSON());
 
+app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Access-Control-Allow-Origin', process.env.WHITELISTED_DOMAIN || '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
+    next();
+});
 
 app.use('/api/places', placesRouter);
 app.use('/api/users', usersRouter);
@@ -37,11 +48,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 
-app.use(((error: HTTPException, req: Request, res: Response, next: NextFunction) => {
+app.use(((error: HTTPException | any, req: Request, res: Response, next: NextFunction) => {
     if (res.headersSent) {
         next(error);
     } else {
-        res.status(error.statusCode).json(error.toResponse());
+        const fallBack: string = process.env.NODE_ENV === 'development' ? error : 'Something went wrong. Please try again.';
+        res.status(error.statusCode).json(error instanceof HTTPException ? error.toResponse() : fallBack);
     }
 }));
 
