@@ -80,18 +80,21 @@ export const updatePlaceById: EMiddleware = async (req, res, next) => {
     }
 
     const placeId               : string = req.params.pid;
-    const { title, description }: SBody = req.body;
+    const { title, description }: SBody  = req.body;
 
     try {
         const updatedOn : number = new Date().getTime();
-        const foundPlace: IPlace | null = await Place.findByIdAndUpdate(placeId, { title, description, updatedOn }, {new: true});
+        const foundPlace: IPlace | null = await Place.findById(placeId); 
         if (!foundPlace) {
             next(HTTPException.rNotFound())
-        } else {
+        } else if (req.userData.userId === foundPlace.creatorId.toString()) {
+            foundPlace.title = title; foundPlace.description = description; foundPlace.updatedOn = updatedOn;
             await foundPlace.save();
-            await User.findByIdAndUpdate(foundPlace.creatorId, { updatedOn })
+            await User.findByIdAndUpdate(foundPlace.creatorId, { updatedOn });
             // send the updated object with response
             res.status(200).json(foundPlace.toObject());
+        } else {
+            next(HTTPException.rAuth('incorrect token for desired action'));
         }
     } catch(err) {
         next(HTTPException.rInternal(err));
@@ -101,22 +104,27 @@ export const updatePlaceById: EMiddleware = async (req, res, next) => {
 export const deletePlaceById: EMiddleware = async (req, res, next) => {
     const placeId: string = req.params.pid;
     try {
-        const session: ClientSession = await startSession();
-        session.startTransaction();
-        const foundPlace: IPlace | null = await Place.findByIdAndDelete(placeId, { session });
+        const foundPlace: IPlace | null = await Place.findById(placeId);
         if (!foundPlace) { 
             next(HTTPException.rNotFound());
+         } else if (req.userData.userId === foundPlace.creatorId.toString()) {
+             const updatedOn : number = new Date().getTime();
+             // start transaction
+             const session: ClientSession = await startSession();
+             session.startTransaction();
+             // remove place
+             await foundPlace.remove();
+             // remove the place reference from the tied user
+             await User.findByIdAndUpdate(foundPlace.creatorId, { $pull: { [CollectionName.Place]: foundPlace._id }, updatedOn }, { session });
+             await session.commitTransaction();
+             // delete image on server
+             fs.unlink(foundPlace.image, (err) => {
+                 process.env.NODE_ENV === 'development' && console.log(err);
+             });
+             // send the deleted object with response
+             res.status(200).json(foundPlace.toObject());
          } else {
-            const updatedOn : number = new Date().getTime();
-            // remove the place reference from the tied user
-            await User.findByIdAndUpdate(foundPlace.creatorId, { $pull: { [CollectionName.Place]: foundPlace._id }, updatedOn }, { session });
-            await session.commitTransaction();
-            // delete image on server
-            fs.unlink(foundPlace.image, (err) => {
-                process.env.NODE_ENV === 'development' && console.log(err);
-            });
-            // send the deleted object with response
-            res.status(200).json(foundPlace.toObject());
+            next(HTTPException.rAuth('incorrect token for desired action'));
          }
     } catch(err) {
         next(HTTPException.rInternal(err));
