@@ -64,6 +64,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(((error: HTTPException | any, req: Request, res: Response, next: NextFunction) => {
     if (req.file) {
+        // if any error occurs and we have a file in the request,
+        // that file could have been written to disk, thus remove it
         fs.unlink(req.file.path, (err) => {
             debug && console.log(err);
         });
