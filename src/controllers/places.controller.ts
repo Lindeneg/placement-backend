@@ -49,24 +49,30 @@ export const createPlace: EMiddleware = async (req, res, next) => {
     const { title, description, address, creatorId }: SBody = req.body;
     
     try {
-        const ts      : number = new Date().getTime();
-        const location: GeoLocation = await getCoordsFromAddress(address);
-        const newPlace: IPlace      = new Place({
-            title,
-            description,
-            address,
-            creatorId,
-            location,
-            image    : req.file.path,
-            createdOn: ts,
-            updatedOn: ts
-        });
-        const session: ClientSession = await startSession();
-        session.startTransaction();
-        await newPlace.save({ session });
-        await User.findByIdAndUpdate(creatorId, { $push: { [CollectionName.Place]: newPlace._id }, updatedOn: ts}, { session });
-        await session.commitTransaction();
-        res.status(201).json(newPlace.toObject());
+        // perhaps omit creatorId as an expected property on request body
+        // and just use the already forwarded req.userData.userId
+        if (creatorId === req.userData.userId) {
+            const ts      : number = new Date().getTime();
+            const location: GeoLocation = await getCoordsFromAddress(address);
+            const newPlace: IPlace      = new Place({
+                title,
+                description,
+                address,
+                creatorId,
+                location,
+                image    : req.file.path,
+                createdOn: ts,
+                updatedOn: ts
+            });
+            const session: ClientSession = await startSession();
+            session.startTransaction();
+            await newPlace.save({ session });
+            await User.findByIdAndUpdate(creatorId, { $push: { [CollectionName.Place]: newPlace._id }, updatedOn: ts}, { session });
+            await session.commitTransaction();
+            res.status(201).json(newPlace.toObject());
+        } else {
+            next(HTTPException.rAuth('provided creatorId does not match the userId in the current session'));
+        }
     } catch(err) {
         next(HTTPException.rInternal(err));
     }
