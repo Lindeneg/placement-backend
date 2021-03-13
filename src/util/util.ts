@@ -1,38 +1,37 @@
 import axios, { AxiosResponse } from 'axios';
 import jwt from 'jsonwebtoken';
 
-import HTTPException from '../models/exception.model';
 import { GeoLocation, TokenData } from './types';
+import { COORDINATES_FROM_ADDRESS_FAILED_VALUE as errorLoc, isDebug } from './constants';
 
 
-interface GoogleMapGeoCodeResult {
-    geometry: {
-        location: GeoLocation
-    }  
+interface MapQuestGeoCodeResult {
+    providedLocation: { location: string },
+    locations       : { latLng  : GeoLocation }[]
 };
 
-interface GoogleMapGeoCodeResponse {
-    status        : string,
-    results       : GoogleMapGeoCodeResult[],
-    error_message?: string
+interface MapQuestGeoCodeResponse {
+    info          : { statuscode: number, messages: string[] },
+    results       : MapQuestGeoCodeResult[]
 };
-
-// TODO Use https://developer.mapquest.com/ for geolocation conversion
-// TODO Use https://leafletjs.com/ for (frontend) display of map
 
 export const getCoordsFromAddress = async (address: string): Promise<GeoLocation> => {
 
-    const res: AxiosResponse<GoogleMapGeoCodeResponse> = await axios.get(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${
+    const res: AxiosResponse<MapQuestGeoCodeResponse> = await axios.get(
+        `https://www.mapquestapi.com/geocoding/v1/address?key=${process.env.MAP_QUEST_API_KEY}&location=${
             encodeURI(address)
-        }&key=${process.env.GOOGLE_API_KEY}`
+        }&maxResults=1`
     );
 
-    if (!res.data || res.data.status === 'ZERO_RESULTS' || res.data.results.length <= 0) {
-        throw new HTTPException('Could not find coordinates for specified address', 422);
+    if (
+        !res.data || res.data.info.statuscode !== 0 || res.data.results.length <= 0 || 
+        res.data.results[0].locations.length <= 0 || typeof res.data.results[0].locations[0].latLng === 'undefined'
+        ) {
+        isDebug && console.log('error ' + res.data.info.statuscode + ' fetching coordinates from address: ', res.data.info.messages);
+        return { lng: errorLoc, lat: errorLoc };
     }
 
-    return res.data.results[0].geometry.location;
+    return res.data.results[0].locations[0].latLng;
 };
 
 export const getToken = (pl: string | object): string | null => {
@@ -40,7 +39,7 @@ export const getToken = (pl: string | object): string | null => {
         return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, {expiresIn: '1h'});
     }
     return null;
-}
+};
 
 export const verifyToken = (token: string): TokenData | null => {
     try {
@@ -49,11 +48,15 @@ export const verifyToken = (token: string): TokenData | null => {
             if (typeof result === 'object') {
                 return result;
             } else {
-                process.env.NODE_ENV === 'development' && console.log('unexpected token result: ' + result);
+                isDebug && console.log('unexpected token result: ' + result);
             }
         }
     } catch(err) {
-        process.env.NODE_ENV === 'development' && console.log(err);
+        isDebug && console.log(err);
     }
     return null;
+};
+
+export const logError = (error: string): void => {
+    isDebug && console.log(error);
 }
