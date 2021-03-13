@@ -1,1 +1,1 @@
-just a simple app so I can get comfortable communicating with express
+just a simple app so I can get comfortable using express
