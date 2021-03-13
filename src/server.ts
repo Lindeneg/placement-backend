@@ -9,36 +9,16 @@ import { config } from 'dotenv';
 import placesRouter from './routes/places.routes';
 import usersRouter from './routes/users.routes'
 import HTTPException from './models/exception.model';
+import { isDebug, requiredEnvVars } from './util/constants';
 
-
-// TODO logging
 
 config({path: path.resolve(__dirname, '../.env')});
 
-if (typeof process.env.MONGO_DB_URI === 'undefined') {
-    throw new Error('MONGO_DB_URI is undefined');
-}
-
-if (typeof process.env.WHITELISTED_DOMAIN === 'undefined') {
-    throw new Error('WHITELISTED_DOMAIN is undefined');
-}
-
-if (typeof process.env.JWT_PRIVATE_TOKEN === 'undefined') {
-    throw new Error('JWT_PRIVATE_TOKEN is undefined');
-}
-
-if (typeof process.env.PORT === 'undefined') {
-    throw new Error('PORT is undefined');
-}
-
-
-// TODO use leaflet instead
-if (typeof process.env.GOOGLE_API_KEY === 'undefined') {
-    throw new Error('GOOGLE_API_KEY is undefined');
-}
-
-const debug: boolean = process.env.NODE_ENV === 'development';
-
+requiredEnvVars.forEach(key => {
+    if (typeof process.env.key === 'undefined') {
+        throw new Error(key + ' is undefined');
+    }
+});
 
 const app: Express = express();
 
@@ -67,13 +47,13 @@ app.use(((error: HTTPException | any, req: Request, res: Response, next: NextFun
         // if any error occurs and we have a file in the request,
         // that file could have been written to disk, thus remove it
         fs.unlink(req.file.path, (err) => {
-            debug && console.log(err);
+            isDebug && console.log(err);
         });
     }
     if (res.headersSent) {
         next(error);
     } else {
-        const fallBack: string = debug ? error : 'Something went wrong. Please try again.';
+        const fallBack: string = isDebug ? error : 'Something went wrong. Please try again.';
         res.status(error.statusCode || 500).json(error instanceof HTTPException ? error.toResponse() : (error instanceof Error ? error.message : fallBack));
     }
 }));
@@ -81,7 +61,7 @@ app.use(((error: HTTPException | any, req: Request, res: Response, next: NextFun
 
 console.log('connecting to mongodb...')
 // https://mongoosejs.com/docs/deprecations.html
-connect(process.env.MONGO_DB_URI, {
+connect(`mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_KEY}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/${process.env.MONGO_DB_NAME}?retryWrites=true&w=majority`, {
     useNewUrlParser   : true, 
     useUnifiedTopology: true,
     useCreateIndex    : true,
@@ -89,11 +69,11 @@ connect(process.env.MONGO_DB_URI, {
 })
 .then(() => {
     // only start server if connection to database exists
-    app.listen(process.env.PORT, () => {
-        console.log('connected to mongodb\nstarting server on port ' + process.env.PORT);
+    app.listen(process.env.PORT || 5000, () => {
+        console.log('connected to mongodb\nstarting server on port ' + process.env.PORT || 5000);
     });
 })
 .catch((err) => {
     console.log('connection to mongodb failed...');
-    debug && console.log(err);
+    isDebug && console.log(err);
 });

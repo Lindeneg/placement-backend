@@ -8,7 +8,6 @@ import { getUsers, login, signup } from '../controllers/users.controller';
 const router = Router();
 
 
-
 router.get('/', getUsers);
 
 router.post('/signup', 

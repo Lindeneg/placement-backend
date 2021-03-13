@@ -1,5 +1,4 @@
-import { Result, ValidationError } from 'express-validator';
-
+import { isDebug } from '../util/constants';
 import { ErrorResponseContent, DevError } from "../util/types";
 
 
@@ -17,7 +16,7 @@ export default class HTTPException extends Error {
 
     public toResponse(): ErrorResponseContent {
         const obj: ErrorResponseContent = {message: this.message};
-        if (process.env.NODE_ENV === 'development') {
+        if (isDebug) {
             obj.dev = this.error;
         }
         return obj;

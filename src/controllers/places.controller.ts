@@ -7,6 +7,7 @@ import User from '../models/user.model';
 import HTTPException from '../models/exception.model';
 import Place, { IPlace } from '../models/place.model';
 import { getCoordsFromAddress } from '../util/util';
+import { isDebug } from '../util/constants';
 import { EMiddleware, GeoLocation, SBody, CollectionName } from '../util/types';
 
 
@@ -125,7 +126,7 @@ export const deletePlaceById: EMiddleware = async (req, res, next) => {
              await session.commitTransaction();
              // delete image on server
              fs.unlink(foundPlace.image, (err) => {
-                 process.env.NODE_ENV === 'development' && console.log(err);
+                 isDebug && console.log(err);
              });
              // send the deleted object with response
              res.status(200).json(foundPlace.toObject());
