@@ -31,7 +31,7 @@ export const signup: EMiddleware = async (req, res, next) => {
             next(HTTPException.rUnprocessable('user already exists in system'));
         } else {
             const ts     : number = new Date().getTime();
-            const pwd    : string = await bcrypt.hash(password, 16); // TODO 12
+            const pwd    : string = await bcrypt.hash(password, 12);
             const newUser: IUser  = new User({  
                 name, 
                 email, 
