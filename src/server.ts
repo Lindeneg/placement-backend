@@ -15,7 +15,7 @@ import { isDebug, requiredEnvVars } from './util/constants';
 config({path: path.resolve(__dirname, '../.env')});
 
 requiredEnvVars.forEach(key => {
-    if (typeof process.env.key === 'undefined') {
+    if (typeof process.env[key] === 'undefined') {
         throw new Error(key + ' is undefined');
     }
 });

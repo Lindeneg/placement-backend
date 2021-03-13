@@ -1,2 +1,1 @@
-*in progress*
-*todo: proper auth using jwt and proper hashing of pwds*
+just a simple app so I can get comfortable communicating with express
