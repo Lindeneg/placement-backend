@@ -58,10 +58,9 @@ app.use(((error: HTTPException | any, req: Request, res: Response, next: NextFun
     }
 }));
 
-
 console.log('connecting to mongodb...')
 // https://mongoosejs.com/docs/deprecations.html
-connect(`mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_KEY}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/${process.env.MONGO_DB_NAME}?retryWrites=true&w=majority`, {
+connect(`mongodb+srv://${process.env.MONGO_DB_USER}:${encodeURIComponent(process.env.MONGO_DB_KEY || '')}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/${process.env.MONGO_DB_NAME}?retryWrites=true&w=majority`, {
     useNewUrlParser   : true, 
     useUnifiedTopology: true,
     useCreateIndex    : true,
@@ -69,8 +68,8 @@ connect(`mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_KEY}@
 })
 .then(() => {
     // only start server if connection to database exists
-    app.listen(process.env.PORT || 5000, () => {
-        console.log('connected to mongodb\nstarting server on port ' + process.env.PORT || 5000);
+    app.listen(process.env.PORT, () => {
+        console.log('connected to mongodb\nstarting server on port ' + process.env.PORT);
     });
 })
 .catch((err) => {

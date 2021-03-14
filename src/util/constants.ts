@@ -8,4 +8,5 @@ export const requiredEnvVars                      : string[] = [
     'MONGO_DB_CLUSTER',
     'JWT_PRIVATE_TOKEN',
     'WHITELISTED_DOMAIN',
+    'PORT'
 ];
