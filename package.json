@@ -7,7 +7,7 @@
     "build": "tsc",
     "startprod": "yarn build && node ./build/server.js",
     "startdev": "NODE_ENV=development nodemon ./src/server.ts",
-    "start": "yarn startdev"
+    "start": "NODE_ENV=production node ./build/server.js"
   },
   "dependencies": {
     "@types/axios": "^0.14.0",
