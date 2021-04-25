@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 
 import express, { Express, Request, Response, NextFunction } from 'express';
+import favicon from 'serve-favicon';
 import { connect } from 'mongoose';
 import { json as bodyParserJSON } from 'body-parser';
 import { config } from 'dotenv';
@@ -25,20 +26,16 @@ const app: Express = express();
 
 app.use(bodyParserJSON());
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('Access-Control-Allow-Origin', process.env.WHITELISTED_DOMAIN || '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
-    next();
-});
+// serve public static files
+app.use(express.static(path.join('public')));
+app.use(favicon(path.join('/public', 'favicon.ico')));
 
 app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 app.use('/api/places', placesRouter);
 app.use('/api/users', usersRouter);
 
-
 app.use((req: Request, res: Response, next: NextFunction) => {
-    next(HTTPException.rNotFound());
+    res.sendFile(path.resolve('public', 'index.html'));
 });
 
 

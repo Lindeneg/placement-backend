@@ -1,1 +1,1 @@
-just a simple app so I can get comfortable using express. check it out [here](https://placement-app.lindeneg.org)
+just a simple app so I can get comfortable using express. check it out [here](https://placement.lindeneg.org)
